@@ -1,0 +1,13 @@
+# Credenciais e chave de criptografia. Nunca versionar.
+.env
+
+# Imagens enviadas pelo usuário.
+/public/uploads/*
+!/public/uploads/.htaccess
+
+# Sistema operacional e editores
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp

@@ -1,0 +1,24 @@
+# Use este arquivo APENAS quando não for possível apontar o document root do
+# cPanel para a pasta public/. Ele redireciona tudo para lá e bloqueia o
+# acesso ao restante do projeto.
+#
+# Apontar o document root para public/ continua sendo o caminho preferido:
+# assim .env, src/ e migrations/ nem chegam a ficar acessíveis pela web.
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    RewriteCond %{REQUEST_URI} !^/public/
+    RewriteRule ^(.*)$ public/$1 [L]
+</IfModule>
+
+# Trava o que nunca deve ser servido, caso a reescrita acima falhe.
+<FilesMatch "^(\.env|composer\.(json|lock)|.*\.md)$">
+    Require all denied
+</FilesMatch>
+
+<IfModule mod_rewrite.c>
+    RewriteRule ^(src|views|migrations|bin|tests|docs)/ - [F,L]
+</IfModule>
+
+Options -Indexes

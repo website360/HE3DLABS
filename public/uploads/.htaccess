@@ -1,0 +1,11 @@
+# Uploads são conteúdo enviado pelo usuário: servir como arquivo estático,
+# nunca executar. Sem isso, um arquivo com extensão dupla que passasse pela
+# validação poderia rodar como PHP.
+php_flag engine off
+
+<FilesMatch "\.(php|phtml|phar|phps|cgi|pl|py|sh)$">
+    Require all denied
+</FilesMatch>
+
+Options -Indexes -ExecCGI
+AddType text/plain .php .phtml .phar
