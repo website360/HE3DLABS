@@ -12,6 +12,7 @@ use App\Core\Request;
 use App\Core\Sessao;
 use App\Dominio\Canal;
 use App\Models\Contas;
+use App\Services\Canal\Credenciais;
 use App\Services\Canal\MercadoLivre\Oauth as OauthML;
 use App\Services\Canal\Shopee\Oauth as OauthShopee;
 use App\Services\Http\ClienteComLog;
@@ -31,8 +32,12 @@ final class CanaisController extends Controller
                 'canal'      => $canal,
                 'conta'      => $conta,
                 'conectado'  => Contas::conectada($canal),
-                'credenciais' => $this->credenciaisDoEnv($canal),
-                'redirect'   => $this->redirectUri($canal),
+                'clientId'   => Credenciais::clientId($canal),
+                'temSegredo' => Credenciais::segredo($canal) !== null,
+                'completo'   => Credenciais::completo($canal),
+                'noEnv'      => $this->credenciaisDoEnv($canal),
+                'redirect'   => Credenciais::redirectUri($canal),
+                'host'       => $canal === Canal::Shopee ? Credenciais::hostShopee() : null,
             ];
         }
 
@@ -46,8 +51,29 @@ final class CanaisController extends Controller
     {
         $canalEnum = $this->canal($canal);
 
+        $clientId = Request::post('client_id');
+
+        if ($clientId !== null) {
+            // O segredo em branco preserva o que já está gravado: a tela
+            // nunca mostra o valor atual, então não há como retipá-lo.
+            Contas::salvarCredenciais($canalEnum, $clientId, Request::post('client_secret'));
+        }
+
         Contas::salvarMarkup($canalEnum, (float) (Request::postDecimal('markup', 0.0) ?? 0.0));
-        Flash::sucesso("Configuração {$canalEnum->com('de')} salva.");
+
+        if ($canalEnum === Canal::Shopee) {
+            $host = Request::post('host');
+
+            if ($host !== null) {
+                Contas::salvarExtra($canalEnum, 'host', rtrim($host, '/'));
+            }
+        }
+
+        Flash::sucesso(
+            Credenciais::completo($canalEnum)
+                ? "Credenciais {$canalEnum->com('de')} salvas. Agora é conectar a conta."
+                : "Configuração salva, mas ainda faltam credenciais {$canalEnum->com('de')}."
+        );
 
         return $this->redirecionar('/canais');
     }
@@ -202,11 +228,4 @@ final class CanaisController extends Controller
         };
     }
 
-    private function redirectUri(Canal $canal): ?string
-    {
-        return match ($canal) {
-            Canal::MercadoLivre => Config::get('ML_REDIRECT_URI'),
-            Canal::Shopee       => Config::get('SHOPEE_REDIRECT_URI'),
-        };
-    }
 }

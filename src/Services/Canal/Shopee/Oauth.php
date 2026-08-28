@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Services\Canal\Shopee;
 
-use App\Core\Config;
 use App\Core\Db;
 use App\Dominio\Canal;
 use App\Models\Contas;
+use App\Services\Canal\Credenciais;
 use App\Services\Canal\ErroPublicacao;
 use App\Services\Http\ClienteHttp;
 
@@ -33,10 +33,10 @@ final class Oauth
     /** URL para onde o lojista é enviado a fim de autorizar o app. */
     public static function urlAutorizacao(): string
     {
-        $partnerId = (int) Config::obrigatorio('SHOPEE_PARTNER_ID');
-        $partnerKey = Config::obrigatorio('SHOPEE_PARTNER_KEY');
-        $redirect = Config::obrigatorio('SHOPEE_REDIRECT_URI');
-        $host = rtrim((string) Config::get('SHOPEE_HOST', 'https://partner.shopeemobile.com'), '/');
+        [$id, $partnerKey] = Credenciais::exigir(Canal::Shopee);
+        $partnerId = (int) $id;
+        $redirect = Credenciais::redirectUri(Canal::Shopee);
+        $host = Credenciais::hostShopee();
         $timestamp = time();
 
         $assinatura = Assinatura::publica($partnerId, $partnerKey, self::CAMINHO_AUTORIZACAO, $timestamp);
@@ -57,7 +57,7 @@ final class Oauth
         $resposta = $this->chamarPublico(self::CAMINHO_TOKEN, [
             'code'       => $codigo,
             'shop_id'    => (int) $shopId,
-            'partner_id' => (int) Config::obrigatorio('SHOPEE_PARTNER_ID'),
+            'partner_id' => (int) Credenciais::exigir(Canal::Shopee)[0],
         ]);
 
         $this->gravar($resposta, $shopId);
@@ -88,7 +88,7 @@ final class Oauth
             $resposta = $this->chamarPublico(self::CAMINHO_RENOVACAO, [
                 'refresh_token' => $refresh,
                 'shop_id'       => (int) $shopId,
-                'partner_id'    => (int) Config::obrigatorio('SHOPEE_PARTNER_ID'),
+                'partner_id'    => (int) Credenciais::exigir(Canal::Shopee)[0],
             ]);
 
             $this->gravar($resposta, $shopId);
@@ -104,9 +104,9 @@ final class Oauth
      */
     private function chamarPublico(string $caminho, array $corpo): array
     {
-        $partnerId = (int) Config::obrigatorio('SHOPEE_PARTNER_ID');
-        $partnerKey = Config::obrigatorio('SHOPEE_PARTNER_KEY');
-        $host = rtrim((string) Config::get('SHOPEE_HOST', 'https://partner.shopeemobile.com'), '/');
+        [$id, $partnerKey] = Credenciais::exigir(Canal::Shopee);
+        $partnerId = (int) $id;
+        $host = Credenciais::hostShopee();
         $timestamp = time();
 
         $parametros = http_build_query([

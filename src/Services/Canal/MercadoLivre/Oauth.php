@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace App\Services\Canal\MercadoLivre;
 
-use App\Core\Config;
 use App\Core\Db;
 use App\Core\Sessao;
 use App\Dominio\Canal;
 use App\Models\Contas;
+use App\Services\Canal\Credenciais;
 use App\Services\Canal\ErroPublicacao;
 use App\Services\Http\ClienteHttp;
 
@@ -42,8 +42,8 @@ final class Oauth
 
         $parametros = [
             'response_type'         => 'code',
-            'client_id'             => Config::obrigatorio('ML_CLIENT_ID'),
-            'redirect_uri'          => Config::obrigatorio('ML_REDIRECT_URI'),
+            'client_id'             => Credenciais::exigir(Canal::MercadoLivre)[0],
+            'redirect_uri'          => Credenciais::redirectUri(Canal::MercadoLivre),
             'state'                 => $_SESSION['ml_state'],
             'code_challenge'        => self::desafio($verificador),
             'code_challenge_method' => 'S256',
@@ -64,10 +64,10 @@ final class Oauth
             ],
             http_build_query([
                 'grant_type'    => 'authorization_code',
-                'client_id'     => Config::obrigatorio('ML_CLIENT_ID'),
-                'client_secret' => Config::obrigatorio('ML_CLIENT_SECRET'),
+                'client_id'     => Credenciais::exigir(Canal::MercadoLivre)[0],
+                'client_secret' => Credenciais::exigir(Canal::MercadoLivre)[1],
                 'code'          => $codigo,
-                'redirect_uri'  => Config::obrigatorio('ML_REDIRECT_URI'),
+                'redirect_uri'  => Credenciais::redirectUri(Canal::MercadoLivre),
                 'code_verifier' => $verificador,
             ])
         );
@@ -114,8 +114,8 @@ final class Oauth
                 ],
                 http_build_query([
                     'grant_type'    => 'refresh_token',
-                    'client_id'     => Config::obrigatorio('ML_CLIENT_ID'),
-                    'client_secret' => Config::obrigatorio('ML_CLIENT_SECRET'),
+                    'client_id'     => Credenciais::exigir(Canal::MercadoLivre)[0],
+                    'client_secret' => Credenciais::exigir(Canal::MercadoLivre)[1],
                     'refresh_token' => $refresh,
                 ])
             );

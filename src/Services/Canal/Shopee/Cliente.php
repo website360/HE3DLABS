@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Services\Canal\Shopee;
 
-use App\Core\Config;
 use App\Dominio\Canal;
 use App\Models\Contas;
+use App\Services\Canal\Credenciais;
 use App\Services\Canal\ErroPublicacao;
 use App\Services\Http\ClienteHttp;
 use App\Services\Http\RespostaHttp;
@@ -98,9 +98,9 @@ final class Cliente
 
     private function urlAssinada(string $caminho): string
     {
-        $host = rtrim((string) Config::get('SHOPEE_HOST', 'https://partner.shopeemobile.com'), '/');
-        $partnerId = (int) Config::obrigatorio('SHOPEE_PARTNER_ID');
-        $partnerKey = Config::obrigatorio('SHOPEE_PARTNER_KEY');
+        $host = Credenciais::hostShopee();
+        [$id, $partnerKey] = Credenciais::exigir(Canal::Shopee);
+        $partnerId = (int) $id;
         $timestamp = time();
 
         $conta = Contas::buscar(Canal::Shopee);

@@ -62,20 +62,45 @@ final class Contas
             && ($conta['refresh_token'] ?? null) !== null;
     }
 
-    /** Grava as credenciais de aplicação (não os tokens). */
+    /**
+     * Grava as credenciais de aplicação (não os tokens).
+     *
+     * O segredo nulo preserva o que já estava gravado: a tela nunca exibe
+     * o valor atual, então um campo em branco significa "não mexi nisso",
+     * e não "apague".
+     */
     public static function salvarCredenciais(
         Canal $canal,
         string $clientId,
-        string $clientSecret,
-        float $markup
+        ?string $clientSecret
     ): void {
         self::garantir($canal);
 
+        if ($clientSecret === null || $clientSecret === '') {
+            Db::executar(
+                'UPDATE contas_canal SET client_id = ? WHERE canal = ?',
+                [$clientId, $canal->value]
+            );
+
+            return;
+        }
+
         Db::executar(
-            'UPDATE contas_canal
-                SET client_id = ?, client_secret = ?, markup_percentual = ?
-              WHERE canal = ?',
-            [$clientId, Crypto::criptografar($clientSecret), $markup, $canal->value]
+            'UPDATE contas_canal SET client_id = ?, client_secret = ? WHERE canal = ?',
+            [$clientId, Crypto::criptografar($clientSecret), $canal->value]
+        );
+    }
+
+    /** Guarda uma chave avulsa no extra_json do canal. */
+    public static function salvarExtra(Canal $canal, string $chave, mixed $valor): void
+    {
+        $conta = self::garantir($canal);
+        $extra = $conta['extra'];
+        $extra[$chave] = $valor;
+
+        Db::executar(
+            'UPDATE contas_canal SET extra_json = ? WHERE canal = ?',
+            [json_encode($extra, JSON_UNESCAPED_UNICODE), $canal->value]
         );
     }
 
